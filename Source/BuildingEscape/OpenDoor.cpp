@@ -3,6 +3,8 @@
 
 #include "OpenDoor.h"
 #include "GameFramework/Actor.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 
 
 // Sets default values for this component's properties
@@ -24,9 +26,13 @@ void UOpenDoor::BeginPlay()
 
 	InitalYaw = GetOwner()->GetActorRotation().Yaw;
 	CurrentYaw = InitalYaw;
-	TargetYaw = InitalYaw + 90.f;
+	OpenAngle += InitalYaw;
 
-
+	if(!PressurePlate)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s has the open door component on it but no pressure plate set"), *GetOwner()->GetName());
+	}
+	ActorThatOpen = GetWorld()->GetFirstPlayerController()->GetPawn();
 	
 }
 
@@ -36,21 +42,38 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if(PressurePlate && PressurePlate->IsOverlappingActor(ActorThatOpen))
+	{
+		OpenDoor(DeltaTime);
+		DoorLastOpened = GetWorld()->GetTimeSeconds();
+		//door last opened equal when the door was open
+	}
+	else
+	{
+		if (GetWorld()->GetTimeSeconds() - DoorLastOpened > DoorClosedDelay)
+		{
+		CloseDoor(DeltaTime);
+		}
+		
+	}
 	
 	
-	CurrentYaw = FMath::Lerp(CurrentYaw, TargetYaw, 0.02f);
+}
+
+void UOpenDoor::OpenDoor(float DeltaTime)
+{
+
+	CurrentYaw = FMath::Lerp(CurrentYaw, OpenAngle, DeltaTime * DoorOpenSpeed);
 	FRotator DoorRotation = GetOwner()->GetActorRotation();
 	DoorRotation.Yaw = CurrentYaw;
 	GetOwner()->SetActorRotation(DoorRotation);
 
-	// float StartingYaw = GetOwner()->GetActorRotation().Yaw;
-	// FRotator OpenDoor(0.f, TargetYaw, 0.f);
-	// OpenDoor.Yaw = FMath::Lerp(StartingYaw, TargetYaw, 0.02f);
-	// GetOwner()->SetActorRotation(OpenDoor);
-	// ...
-	// FRotator CurrentRotation = GetOwner()->GetActorRotation();
-	// CurrentRotation.Yaw = 90.f;
-	// FRotator OpenDoor{0.f, -90.f, 0.f};
-
 }
 
+void UOpenDoor::CloseDoor(float DeltaTime)
+{
+	CurrentYaw = FMath::Lerp(CurrentYaw, InitalYaw, DeltaTime * DoorCloseSpeed);
+	FRotator DoorRotation = GetOwner()->GetActorRotation();
+	DoorRotation.Yaw = CurrentYaw;
+	GetOwner()->SetActorRotation(DoorRotation);
+}
