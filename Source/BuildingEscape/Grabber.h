@@ -38,6 +38,12 @@ private:
 	void SetupInputComponent();
 
 	FHitResult GetFirstPhysicsBodyInReach() const;
+
+	//return the line trace end
+	FVector GetPlayerReach() const;
+
+	//Gets players position in world
+	FVector GetPlayerWorldPosition() const;
 			
 };
 
